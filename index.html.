@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111111">
+<title>Silveirape Barbearia</title>
+<style>
+*{box-sizing:border-box}
+body{
+margin:0;background:#111;color:white;
+font-family:Arial,sans-serif;text-align:center
+}
+header{padding:45px 15px 25px}
+.logo{font-size:35px;font-weight:bold;
+letter-spacing:4px;color:#d4af63}
+.sub{color:#d4af63;letter-spacing:7px}
+main{padding:35px 20px}
+h1{font-size:28px}
+p{color:#bbb}
+h2{color:#d4af63;margin-top:45px}
+button{
+width:100%;max-width:350px;padding:18px;
+margin:10px auto;display:block;border-radius:6px;
+border:1px solid #d4af63;background:#222;
+color:white;font-size:16px;cursor:pointer
+}
+.agendar{background:#d4af63;color:#111;
+font-weight:bold;margin-top:30px}
+footer{padding:35px;color:#888;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">SILVEIRAPE</div>
+<div class="sub">BARBEARIA</div>
+</header>
+<main>
+<h1>Seu estilo, nossa assinatura.</h1>
+<p>Bem-vindo à Silveirape Barbearia.</p>
+<h2>NOSSOS SERVIÇOS</h2>
+<button>Corte</button>
+<button>Barba</button>
+<button>Corte e Barba</button>
+<button>Sobrancelha</button>
+<button class="agendar"
+onclick="alert('Agendamento online em construção!')">
+AGENDAR HORÁRIO
+</button>
+</main>
+<footer>
+Silveirape Barbearia © 2026
+</footer>
+</body>
+</html>
