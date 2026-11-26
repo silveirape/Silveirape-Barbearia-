@@ -149,10 +149,15 @@ const {data:ocupados,error}=await db.rpc(
 );
 
 if(error){
-area.innerHTML='<p>Erro ao consultar horários. Tente novamente.</p>';
-console.error(error);
+area.innerHTML =
+'<p style="color:#ff7777">ERRO: ' +
+error.message +
+'</p>';
+
+console.error('Erro Supabase:', error);
 return;
 }
+
 
 const indisponiveis=(ocupados||[]).map(x=>String(x.horario).slice(0,5));
 const horarios=gerarHorarios(data);
