@@ -5,51 +5,228 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#111111">
 <title>Silveirape Barbearia</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box}
 body{
 margin:0;background:#111;color:white;
 font-family:Arial,sans-serif;text-align:center
 }
-header{padding:45px 15px 25px}
+header{padding:40px 15px 20px}
 .logo{font-size:35px;font-weight:bold;
 letter-spacing:4px;color:#d4af63}
 .sub{color:#d4af63;letter-spacing:7px}
-main{padding:35px 20px}
-h1{font-size:28px}
+main{padding:25px 20px;max-width:500px;margin:auto}
+h1{font-size:27px}
 p{color:#bbb}
-h2{color:#d4af63;margin-top:45px}
-button{
-width:100%;max-width:350px;padding:18px;
-margin:10px auto;display:block;border-radius:6px;
+h2{color:#d4af63;margin-top:35px}
+button,select,input{
+width:100%;max-width:350px;padding:15px;
+margin:8px auto;display:block;border-radius:6px;
 border:1px solid #d4af63;background:#222;
-color:white;font-size:16px;cursor:pointer
+color:white;font-size:16px;
 }
-.agendar{background:#d4af63;color:#111;
-font-weight:bold;margin-top:30px}
+button{cursor:pointer}
+button.selected{background:#d4af63;color:#111}
+.agendar{background:#d4af63;color:#111;font-weight:bold}
+label{display:block;color:#d4af63;margin-top:18px}
+#mensagem{margin:20px auto;max-width:350px}
+.horarios{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:350px;margin:auto}
+.horarios button{margin:0;padding:12px 5px}
+.horarios button:disabled{opacity:.3;cursor:not-allowed}
 footer{padding:35px;color:#888;font-size:13px}
 </style>
 </head>
+
 <body>
 <header>
 <div class="logo">SILVEIRAPE</div>
 <div class="sub">BARBEARIA</div>
 </header>
+
 <main>
 <h1>Seu estilo, nossa assinatura.</h1>
 <p>Bem-vindo à Silveirape Barbearia.</p>
+
 <h2>NOSSOS SERVIÇOS</h2>
-<button>Corte</button>
-<button>Barba</button>
-<button>Corte e Barba</button>
-<button>Sobrancelha</button>
-<button class="agendar"
-onclick="alert('Agendamento online em construção!')">
-AGENDAR HORÁRIO
+
+<div id="servicos">
+<button onclick="selecionarServico(this,'Corte')">Corte</button>
+<button onclick="selecionarServico(this,'Barba')">Barba</button>
+<button onclick="selecionarServico(this,'Corte e Barba')">Corte e Barba</button>
+<button onclick="selecionarServico(this,'Sobrancelha')">Sobrancelha</button>
+</div>
+
+<h2>AGENDAR HORÁRIO</h2>
+
+<label for="nome">Seu nome</label>
+<input id="nome" placeholder="Digite seu nome">
+
+<label for="telefone">Telefone / WhatsApp</label>
+<input id="telefone" type="tel" placeholder="(00) 00000-0000">
+
+<label for="data">Escolha a data</label>
+<input id="data" type="date" onchange="carregarHorarios()">
+
+<label>Horários disponíveis</label>
+<div id="horarios" class="horarios">
+<p>Escolha uma data primeiro.</p>
+</div>
+
+<button class="agendar" onclick="confirmarAgendamento()">
+CONFIRMAR AGENDAMENTO
 </button>
+
+<div id="mensagem"></div>
 </main>
-<footer>
-Silveirape Barbearia © 2026
-</footer>
+
+<footer>Silveirape Barbearia © 2026</footer>
+
+<script>
+const SUPABASE_URL = 'https://nctirwsxxzyfnrhdbmoc.supabase.co';
+
+// Utilize a chave pública publishable do seu projeto.
+const SUPABASE_KEY = 'COLE_SUA_CHAVE_PUBLICA_AQUI';
+
+const db = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let servico = '';
+let horarioSelecionado = '';
+
+const hoje = new Date();
+const dataLocal = new Date(
+hoje.getTime() - hoje.getTimezoneOffset()*60000
+).toISOString().split('T')[0];
+
+document.getElementById('data').min = dataLocal;
+
+function selecionarServico(botao,nome){
+servico = nome;
+document.querySelectorAll('#servicos button')
+.forEach(b=>b.classList.remove('selected'));
+botao.classList.add('selected');
+}
+
+function gerarHorarios(data){
+const d = new Date(data+'T12:00:00').getDay();
+let horas=[];
+
+if(d>=2 && d<=5){
+horas=['09:00','10:00','13:00','14:00','15:00',
+'16:00','17:00','18:00','19:00','20:00'];
+}
+if(d===6){
+horas=['13:00','14:00','15:00','16:00'];
+}
+return horas;
+}
+
+async function carregarHorarios(){
+const data=document.getElementById('data').value;
+const area=document.getElementById('horarios');
+horarioSelecionado='';
+area.innerHTML='';
+
+if(!data)return;
+
+const dia=new Date(data+'T12:00:00').getDay();
+
+if(dia===0 || dia===1){
+area.innerHTML='<p>Barbearia fechada neste dia.</p>';
+return;
+}
+
+if(data===dataLocal){
+const agora=new Date();
+}
+
+area.innerHTML='<p>Consultando horários...</p>';
+
+const {data:ocupados,error}=await db.rpc(
+'horarios_ocupados',{p_data:data}
+);
+
+if(error){
+area.innerHTML='<p>Erro ao consultar horários. Tente novamente.</p>';
+console.error(error);
+return;
+}
+
+const indisponiveis=(ocupados||[]).map(x=>String(x.horario).slice(0,5));
+const horarios=gerarHorarios(data);
+
+area.innerHTML='';
+
+horarios.forEach(h=>{
+const botao=document.createElement('button');
+botao.textContent=h;
+
+if(indisponiveis.includes(h)){
+botao.disabled=true;
+botao.textContent=h+' ✕';
+}else{
+botao.onclick=()=>{
+horarioSelecionado=h;
+area.querySelectorAll('button').forEach(b=>{
+b.classList.remove('selected');
+});
+botao.classList.add('selected');
+};
+}
+area.appendChild(botao);
+});
+
+if(!horarios.length){
+area.innerHTML='<p>Sem horários disponíveis.</p>';
+}
+}
+
+async function confirmarAgendamento(){
+const nome=document.getElementById('nome').value.trim();
+const telefone=document.getElementById('telefone').value.trim();
+const data=document.getElementById('data').value;
+const mensagem=document.getElementById('mensagem');
+
+if(!nome||!telefone||!servico||!data||!horarioSelecionado){
+mensagem.textContent='Preencha todos os campos e escolha um horário.';
+return;
+}
+
+mensagem.textContent='Confirmando agendamento...';
+
+const {data:resultado,error}=await db.rpc(
+'criar_agendamento',{
+p_nome:nome,
+p_telefone:telefone,
+p_servico:servico,
+p_data:data,
+p_horario:horarioSelecionado
+}
+);
+
+if(error){
+mensagem.textContent=error.message.includes('reservado')
+?'Este horário acabou de ser reservado. Escolha outro.'
+:'Não foi possível agendar. Verifique os dados e tente novamente.';
+console.error(error);
+await carregarHorarios();
+return;
+}
+
+mensagem.textContent='Agendamento realizado com sucesso!';
+
+document.getElementById('nome').value='';
+document.getElementById('telefone').value='';
+horarioSelecionado='';
+servico='';
+
+document.querySelectorAll('#servicos button')
+.forEach(b=>b.classList.remove('selected'));
+
+await carregarHorarios();
+}
+</script>
 </body>
 </html>
