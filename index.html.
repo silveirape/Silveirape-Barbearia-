@@ -15,38 +15,46 @@ margin:0;background:#111;color:white;
 font-family:Arial,sans-serif;text-align:center
 }
 header{padding:40px 15px 20px}
-.logo{font-size:35px;font-weight:bold;
-letter-spacing:4px;color:#d4af63}
+.logo{
+font-size:35px;font-weight:bold;
+letter-spacing:4px;color:#d4af63
+}
 .sub{color:#d4af63;letter-spacing:7px}
 main{padding:25px 20px;max-width:500px;margin:auto}
 h1{font-size:27px}
 p{color:#bbb}
 h2{color:#d4af63;margin-top:35px}
-button,select,input{
+button,input{
 width:100%;max-width:350px;padding:15px;
 margin:8px auto;display:block;border-radius:6px;
 border:1px solid #d4af63;background:#222;
-color:white;font-size:16px;
+color:white;font-size:16px
 }
 button{cursor:pointer}
 button.selected{background:#d4af63;color:#111}
 .agendar{background:#d4af63;color:#111;font-weight:bold}
 label{display:block;color:#d4af63;margin-top:18px}
 #mensagem{margin:20px auto;max-width:350px}
-.horarios{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:350px;margin:auto}
+.horarios{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:8px;max-width:350px;margin:auto
+}
 .horarios button{margin:0;padding:12px 5px}
-.horarios button:disabled{opacity:.3;cursor:not-allowed}
+.horarios button:disabled{opacity:.3}
 footer{padding:35px;color:#888;font-size:13px}
 </style>
 </head>
 
 <body>
+
 <header>
 <div class="logo">SILVEIRAPE</div>
 <div class="sub">BARBEARIA</div>
 </header>
 
 <main>
+
 <h1>Seu estilo, nossa assinatura.</h1>
 <p>Bem-vindo à Silveirape Barbearia.</p>
 
@@ -68,7 +76,7 @@ footer{padding:35px;color:#888;font-size:13px}
 <input id="telefone" type="tel" placeholder="(00) 00000-0000">
 
 <label for="data">Escolha a data</label>
-<input id="data" type="date" onchange="carregarHorarios()">
+<input id="data" type="date">
 
 <label>Horários disponíveis</label>
 <div id="horarios" class="horarios">
@@ -80,129 +88,171 @@ CONFIRMAR AGENDAMENTO
 </button>
 
 <div id="mensagem"></div>
+
 </main>
 
 <footer>Silveirape Barbearia © 2026</footer>
 
 <script>
-const SUPABASE_URL = 'https://nctirwsxxzyfnrhdbmoc.supabase.co';
+const SUPABASE_URL =
+'https://nctirwsxxzyfnrhdbmoc.supabase.co';
 
-// Utilize a chave pública publishable do seu projeto.
-const SUPABASE_KEY = 'COLE_SUA_CHAVE_PUBLICA_AQUI';
+const SUPABASE_KEY =
+'sb_publishable_0wPBVsSI7HzAaKAtNtYHPw_l1LCkjLW';
 
-const db = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const db = window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
 
 let servico = '';
 let horarioSelecionado = '';
 
-const hoje = new Date();
-const dataLocal = new Date(
-hoje.getTime() - hoje.getTimezoneOffset()*60000
-).toISOString().split('T')[0];
+const campoData = document.getElementById('data');
+const areaHorarios = document.getElementById('horarios');
+const mensagem = document.getElementById('mensagem');
 
-document.getElementById('data').min = dataLocal;
+function hojeLocal(){
+const agora = new Date();
+return new Date(
+agora.getTime() - agora.getTimezoneOffset()*60000
+).toISOString().split('T')[0];
+}
+
+campoData.min = hojeLocal();
 
 function selecionarServico(botao,nome){
 servico = nome;
+
 document.querySelectorAll('#servicos button')
 .forEach(b=>b.classList.remove('selected'));
+
 botao.classList.add('selected');
 }
 
 function gerarHorarios(data){
-const d = new Date(data+'T12:00:00').getDay();
-let horas=[];
+const dia = new Date(data+'T12:00:00').getDay();
 
-if(d>=2 && d<=5){
-horas=['09:00','10:00','13:00','14:00','15:00',
-'16:00','17:00','18:00','19:00','20:00'];
+if(dia>=2 && dia<=5){
+return [
+'09:00','10:00',
+'13:00','14:00','15:00','16:00',
+'17:00','18:00','19:00','20:00'
+];
 }
-if(d===6){
-horas=['13:00','14:00','15:00','16:00'];
+
+if(dia===6){
+return ['13:00','14:00','15:00','16:00'];
 }
-return horas;
+
+return [];
 }
 
 async function carregarHorarios(){
-const data=document.getElementById('data').value;
-const area=document.getElementById('horarios');
-horarioSelecionado='';
-area.innerHTML='';
+
+const data = campoData.value;
+horarioSelecionado = '';
+
+areaHorarios.innerHTML = '';
 
 if(!data)return;
 
-const dia=new Date(data+'T12:00:00').getDay();
-
-if(dia===0 || dia===1){
-area.innerHTML='<p>Barbearia fechada neste dia.</p>';
+if(data < hojeLocal()){
+areaHorarios.innerHTML = '<p>Escolha uma data futura.</p>';
 return;
 }
 
-if(data===dataLocal){
-const agora=new Date();
+const dia = new Date(data+'T12:00:00').getDay();
+
+if(dia===0 || dia===1){
+areaHorarios.innerHTML =
+'<p>Barbearia fechada neste dia.</p>';
+return;
 }
 
-area.innerHTML='<p>Consultando horários...</p>';
+areaHorarios.innerHTML =
+'<p>Consultando horários...</p>';
 
-const {data:ocupados,error}=await db.rpc(
-'horarios_ocupados',{p_data:data}
+try{
+
+const {data:ocupados,error} = await db.rpc(
+'horarios_ocupados',
+{p_data:data}
 );
 
 if(error){
-area.innerHTML =
-'<p style="color:#ff7777">ERRO: ' +
-error.message +
-'</p>';
-
-console.error('Erro Supabase:', error);
+console.error('Erro Supabase:',error);
+areaHorarios.innerHTML =
+'<p style="color:#ff7777">ERRO: '+
+error.message+'</p>';
 return;
 }
 
+const indisponiveis = (ocupados||[]).map(
+x=>String(x.horario).slice(0,5)
+);
 
-const indisponiveis=(ocupados||[]).map(x=>String(x.horario).slice(0,5));
-const horarios=gerarHorarios(data);
+const horarios = gerarHorarios(data);
 
-area.innerHTML='';
+areaHorarios.innerHTML = '';
 
 horarios.forEach(h=>{
-const botao=document.createElement('button');
-botao.textContent=h;
+
+const botao = document.createElement('button');
+botao.textContent = h;
 
 if(indisponiveis.includes(h)){
-botao.disabled=true;
-botao.textContent=h+' ✕';
+botao.disabled = true;
+botao.textContent = h+' ✕';
 }else{
-botao.onclick=()=>{
-horarioSelecionado=h;
-area.querySelectorAll('button').forEach(b=>{
-b.classList.remove('selected');
-});
+
+botao.onclick = ()=>{
+horarioSelecionado = h;
+
+areaHorarios.querySelectorAll('button')
+.forEach(b=>b.classList.remove('selected'));
+
 botao.classList.add('selected');
 };
+
 }
-area.appendChild(botao);
+
+areaHorarios.appendChild(botao);
+
 });
 
-if(!horarios.length){
-area.innerHTML='<p>Sem horários disponíveis.</p>';
+}catch(e){
+
+console.error(e);
+areaHorarios.innerHTML =
+'<p style="color:#ff7777">Falha na conexão: '+
+e.message+'</p>';
+
 }
+
 }
+
+campoData.addEventListener('change',carregarHorarios);
 
 async function confirmarAgendamento(){
-const nome=document.getElementById('nome').value.trim();
-const telefone=document.getElementById('telefone').value.trim();
-const data=document.getElementById('data').value;
-const mensagem=document.getElementById('mensagem');
+
+const nome = document.getElementById('nome').value.trim();
+const telefone = document.getElementById('telefone').value.trim();
+const data = campoData.value;
 
 if(!nome||!telefone||!servico||!data||!horarioSelecionado){
-mensagem.textContent='Preencha todos os campos e escolha um horário.';
+mensagem.textContent =
+'Preencha todos os campos e escolha um horário.';
 return;
 }
 
-mensagem.textContent='Confirmando agendamento...';
+mensagem.textContent = 'Confirmando agendamento...';
 
-const {data:resultado,error}=await db.rpc(
-'criar_agendamento',{
+try{
+
+const {data:resultado,error} = await db.rpc(
+'criar_agendamento',
+{
 p_nome:nome,
 p_telefone:telefone,
 p_servico:servico,
@@ -212,26 +262,38 @@ p_horario:horarioSelecionado
 );
 
 if(error){
-mensagem.textContent=error.message.includes('reservado')
-?'Este horário acabou de ser reservado. Escolha outro.'
-:'Não foi possível agendar. Verifique os dados e tente novamente.';
-console.error(error);
+
+mensagem.textContent = error.message;
 await carregarHorarios();
 return;
+
 }
 
-mensagem.textContent='Agendamento realizado com sucesso!';
+mensagem.textContent =
+'Agendamento realizado com sucesso!';
 
-document.getElementById('nome').value='';
-document.getElementById('telefone').value='';
-horarioSelecionado='';
-servico='';
+document.getElementById('nome').value = '';
+document.getElementById('telefone').value = '';
+
+servico = '';
+horarioSelecionado = '';
 
 document.querySelectorAll('#servicos button')
 .forEach(b=>b.classList.remove('selected'));
 
 await carregarHorarios();
+
+}catch(e){
+
+mensagem.textContent =
+'Erro ao realizar agendamento: '+e.message;
+
+console.error(e);
+
+}
+
 }
 </script>
+
 </body>
 </html>
